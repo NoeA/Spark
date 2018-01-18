@@ -1,1 +1,8 @@
 spvenv
+metastore_db
+spark-warehouse
+.ipynb_checkpoints
+derby.log
+spark_test.ipynb
+.DS_Store
+.idea/codeStyles/
