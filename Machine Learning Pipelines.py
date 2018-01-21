@@ -1,5 +1,7 @@
 import pyspark
 from pyspark.sql import SparkSession
+from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler
+from pyspark.ml import Pipeline
 
 sc = pyspark.SparkContext()
 
@@ -57,3 +59,33 @@ cast('integer'))
 # Remove missing values
 model_data = model_data.\
     filter("arr_delay is not NULL and dep_delay is not NULL and air_time is not NULL and plane_year is not NULL")
+
+# Create a StringIndexer for carrier column
+carr_indexer = StringIndexer(inputCol='carrier', outputCol='carrier_index')
+
+# Create a OneHotEncoder for carrier column
+carr_encoder = OneHotEncoder(inputCol='carrier_index', outputCol='carrier_fact')
+
+# Create a StringIndexer for Destination column
+dest_indexer = StringIndexer(inputCol='dest',outputCol='dest_index')
+
+# Create a OneHotEncoder for Destination column
+dest_encoder = OneHotEncoder(inputCol='dest_index',outputCol='dest_fact')
+
+""" The last step in the Pipeline is to combine all of the columns containing our features into a single column. """
+
+######## Assemble a vector  #######
+
+# Make a VectorAssembler
+vec_assembler = VectorAssembler(inputCols=["month", "air_time", "carrier_fact", "dest_fact", "plane_age"], outputCol="features")
+
+# Make the pipeline
+flights_pipe = Pipeline(stages=[dest_indexer, dest_encoder, carr_indexer, carr_encoder, vec_assembler])
+
+###### Transform the data #########
+
+# Fit and transform the data
+piped_data = flights_pipe.fit(model_data).transform(model_data)
+
+# Split the data into training and test sets
+training, test = piped_data.randomSplit([.6, .4])  # split the data into two pieces, training with 60% of the data, and test with 40% of the data
